@@ -95,7 +95,23 @@ def blurimage(imview: PILImageView, slider: Slider, statusbar: StatusBar, notifi
     imview.image = imview.image.filter(ImageFilter.GaussianBlur(radius=val))
     notifier.notify("Applied Blur")
 
-def startcrop(cropview: CropView, notifier: Notifier, imview: PILImageView, statusbar: StatusBar, containerstack: Stack):
+def cancelop(cancelbutton: IconButton, cropview: CropView, imview: PILImageView, statusbar: StatusBar, blurslider: Slider):
+    BuildContext()["allowimagechanges"] = True
+
+    if BuildContext()["curop"] == "crop":
+        cropview.hidecropview()
+    elif BuildContext()["curop"] == "blur":
+        imview.image = imview.original_image
+        del imview.original_image
+        statusbar.unset("preview")
+        imview.after_layout_recalculation()
+        blurslider.set_value(0)
+
+    cancelbutton.set_disabled(True)
+
+    BuildContext()["curop"] = None
+
+def startcrop(cropview: CropView, notifier: Notifier, imview: PILImageView, statusbar: StatusBar, containerstack: Stack, cancelbutton: IconButton):
     
     if not BuildContext()["allowimagechanges"] and BuildContext()["curop"] != "crop":
         notifier.notify("Can not perform this operation while another operation is in progress")
@@ -110,6 +126,7 @@ def startcrop(cropview: CropView, notifier: Notifier, imview: PILImageView, stat
             notifier.notify("Please adjust the handles to crop the image")
             BuildContext()["cropnotification"] = True
         cropview.showcropview()
+        cancelbutton.set_disabled()
     else:
         leftr, topr, rightr, bottomr = cropview.get_crop_ratios()
         left = imview.image.size[0]*leftr
@@ -117,6 +134,8 @@ def startcrop(cropview: CropView, notifier: Notifier, imview: PILImageView, stat
         right = imview.image.size[0] - imview.image.size[0]*rightr
         bottom = imview.image.size[1] - imview.image.size[1]*bottomr
         cropview.hidecropview()
+
+        cancelbutton.set_disabled(True)
 
         if right - left < 2 or bottom - top < 2:
             notifier.notify("Can't crop further, the image is too small")
@@ -131,7 +150,7 @@ def startcrop(cropview: CropView, notifier: Notifier, imview: PILImageView, stat
 def set_filter_notification(status: bool):
     BuildContext()["filternotification"] = status
 
-def filtersliderchange(self: Slider, filter: str, imview: PILImageView, statusbar: StatusBar, notifier: Notifier, *, attr="", filterobj: ImageFilter):
+def filtersliderchange(self: Slider, filter: str, imview: PILImageView, statusbar: StatusBar, notifier: Notifier, attr: str, filterobj: ImageFilter, cancelbutton: IconButton):
     if not BuildContext()["allowimagechanges"] and BuildContext()["curop"] != filter:
         self.set_value(0)
         if not BuildContext()["filternotification"]:
@@ -140,6 +159,7 @@ def filtersliderchange(self: Slider, filter: str, imview: PILImageView, statusba
         return
     
     if BuildContext()["allowimagechanges"]:
+        cancelbutton.set_disabled()
         imview.original_image = imview.image.copy()
     imview.image = imview.original_image.filter(filterobj(**{attr: int(self.get_value())}))
     statusbar.set_status("preview", f"Previewing {filter.title()}")
@@ -149,6 +169,7 @@ def filtersliderchange(self: Slider, filter: str, imview: PILImageView, statusba
         BuildContext()["curop"] = filter
     elif self.get_value() == 0:
         if BuildContext()["curop"] == filter:
+            cancelbutton.set_disabled(True)
             imview.image = imview.original_image
             del imview.original_image
             statusbar.unset("preview")
@@ -166,7 +187,7 @@ def runapp():
                     menu_items=[
                         MenuItem("Open Image", lambda: openimage(imview, statusbar, notifier, containerstack, cropbutton, blurbutton, blurslider)),
                         MenuItem("Save", lambda: saveimage(imview, notifier)),
-                        MenuItem("Save As", lambda: saveasimage(imview, notifier, statusbar))
+                        MenuItem("Save As", lambda: saveasimage(imview, notifier, statusbar, blurslider))
                     ]
                 ),
                 Row(
@@ -176,7 +197,16 @@ def runapp():
                             cropview := CropView(
                                 child= (imview := PILImageView())
                             ),
-                            AnchorToImageView(imview, IconButton(icon=Icons.cross(_scale(20), c_white), ypad=_scale(10), xpad=_scale(10)))
+                            AnchorToImageView(
+                                imview, 
+                                cancelbutton := IconButton(
+                                    icon=Icons.cross(_scale(20), c_white),
+                                    ypad=_scale(10),
+                                    xpad=_scale(10),
+                                    disabled=True,
+                                    action=lambda: cancelop(cancelbutton, cropview, imview, statusbar, blurslider)
+                                )
+                            )
                         ]),
                         Spacer(f"{_scale(10)},0"),
                         VSep(),
@@ -189,7 +219,7 @@ def runapp():
                                     _scale(8),
                                     child = (cropbutton := PillButton(
                                         label="Crop",
-                                        action=lambda: startcrop(cropview, notifier, imview, statusbar, containerstack), 
+                                        action=lambda: startcrop(cropview, notifier, imview, statusbar, containerstack, cancelbutton), 
                                         disabled=True,
                                         hsize="1f",
                                     ))
@@ -209,7 +239,7 @@ def runapp():
                                             disabled=True
                                         ),
                                         Spacer("16,0"),
-                                        blurslider := Slider(disabled=True, on_change=lambda self: filtersliderchange(self, "blur",  imview, statusbar, notifier, attr="radius", filterobj=ImageFilter.GaussianBlur)),
+                                        blurslider := Slider(disabled=True, on_change=lambda self: filtersliderchange(self, "blur",  imview, statusbar, notifier, "radius", ImageFilter.GaussianBlur, cancelbutton)),
                                         Spacer("8,0"),
                                     ],
                                     size = f",{blurbutton.layoutobject.y}",

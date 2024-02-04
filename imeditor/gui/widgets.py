@@ -147,6 +147,18 @@ class WidgetWithChild(Widget):
     def set_child(self, child: Widget):
         self.child = child
 
+    def handle_mouse_down(self, pos: Tuple[int, int]) -> bool:
+        if self.child is not None:
+            self.child.handle_mouse_down(pos)
+    
+    def handle_mouse_up(self, pos: Tuple[int, int]) -> bool:
+        if self.child is not None:
+            self.child.handle_mouse_up(pos)
+
+    def handle_mouse_movement(self, pos: Tuple[int, int]) -> bool:
+        if self.child is not None:
+            self.child.handle_mouse_movement(pos)
+
 class WidgetWithChildren(Widget):
     def __init__(self) -> None:
         super().__init__()
@@ -194,7 +206,6 @@ class AppRoot(WidgetWithChild):
     def run(self, debug: bool = False) -> None:
         self.running = True
         self.recalculate_layout(*pygame.display.get_window_size(), (0, 0))
-        print(self.layoutobject)
         while self.running:
             self._clock.tick(self.fps)
             for evt in pygame.event.get():
@@ -794,6 +805,8 @@ class CropView(Container, Button):
             self.boxrectdarkensurf.fill((0, 0, 0, 0), boxrectzero_offset)#, pygame.BLENDMODE_NONE)
 
             window.blit(self.boxrectdarkensurf, self.boxrectoriginal)
+
+            self.prevhovering = self.hovering
             
 
             pygame.draw.rect(window, c_accent, tl)
@@ -811,7 +824,8 @@ class CropView(Container, Button):
         return dims
     
     def handle_mouse_movement(self, pos: Tuple[int, int]) -> bool:
-        super().handle_mouse_movement(pos, False)
+        self.prevhovering = self.hovering
+        Button.handle_mouse_movement(self, pos, False)
         rval = False
 
         if self.visible:
@@ -821,7 +835,7 @@ class CropView(Container, Button):
             elif self._br.collidepoint(pos) or self._tl.collidepoint(pos):
                 pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_SIZENWSE)
                 rval = True
-            elif self.hovering:
+            elif self.prevhovering:
                 pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
                 rval = True
 
@@ -924,7 +938,7 @@ class CropView(Container, Button):
         return rval
     
     def handle_mouse_down(self, pos: Tuple[int, int]):
-        super().handle_mouse_down(pos)
+        Button.handle_mouse_down(self, pos)
         if self._bl.collidepoint(pos):
             self.cropping_attr = "bl"
             return True
@@ -941,7 +955,7 @@ class CropView(Container, Button):
             self.cropping_attr = None
     
     def handle_mouse_up(self, pos: Tuple[int, int]):
-        super().handle_mouse_up(pos)
+        Button.handle_mouse_up(self, pos)
         self.cropping_attr = None
 
     def showcropview(self):
@@ -1042,8 +1056,9 @@ class IconPosition(enum.Enum):
 
 
 class IconButton(Button):
-    def __init__(self, *, icon: Icon, position: IconPosition = IconPosition.TOPRIGHT, xpad: int = 0, ypad: int = 0) -> None:
+    def __init__(self, *, icon: Icon, position: IconPosition = IconPosition.TOPRIGHT, xpad: int = 0, ypad: int = 0, disabled: bool = False, action: Callable = lambda: None) -> None:
         super().__init__()
+        self.action = action
         self.layoutobject = lh.LayoutObject(**_sizeargs(","))
         self.icon = icon
         self.position = position
@@ -1052,6 +1067,7 @@ class IconButton(Button):
         self.xpad = xpad
         self.buttonrect = icon.get_rect()
         self.buttonsurf = pygame.Surface((self.icon.buttonradius*2, self.icon.buttonradius*2), pygame.SRCALPHA)
+        self.disabled = disabled
 
     def after_layout_recalculation(self):
         self.buttonrect.w = self.icon.buttonradius*2
@@ -1088,20 +1104,45 @@ class IconButton(Button):
         pygame.gfxdraw.filled_circle(self.buttonsurf, *(int(self.icon.buttonradius),)*2, int(self.icon.buttonradius)-1, (0, 0, 0))
         
     def render(self, window: pygame.SurfaceType):
+        if not self.disabled:
+            if self.pressed:
+                self.buttonsurf.set_alpha(227)
+            elif self.hovering:
+                self.buttonsurf.set_alpha(177)
+            else:
+                self.buttonsurf.set_alpha(127)
 
-        if self.hovering:
-            self.buttonsurf.set_alpha(177)
-        elif self.pressed:
-            self.buttonsurf.set_alpha(227)
-        else:
-            self.buttonsurf.set_alpha(127)
-
-        window.blit(self.buttonsurf, self.buttonrect)
-        window.blit(self.icon.iconimage, self.iconrect)
+            window.blit(self.buttonsurf, self.buttonrect)
+            window.blit(self.icon.iconimage, self.iconrect)
 
     def handle_mouse_down(self, pos: Tuple[int, int]):
         if self.buttonrect.collidepoint(pos):
-            pass
+            self.pressed = True
+            return True
+        return False
+    
+    def handle_mouse_up(self, pos: Tuple[int, int]):
+        if self.buttonrect.collidepoint(pos):
+            if self.pressed and not self.disabled:
+                self.pressed = False
+                self.action()
+                return True
+        self.pressed = False
+        return False
+    
+    def handle_mouse_movement(self, pos: Tuple[int, int], changecursor: bool = True):
+        if self.buttonrect.collidepoint(pos):
+            self.hovering = True
+            if changecursor:
+                if not self.disabled:
+                    pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_HAND)
+            return True
+        else:
+            if self.hovering:
+                if changecursor:
+                    pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
+            self.hovering = False
+        return False
         
 class AnchorToImageView(WidgetWithChild):
     def __init__(self, image_view: ImageView, child: Widget) -> None:
