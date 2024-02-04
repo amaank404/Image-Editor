@@ -500,7 +500,7 @@ class PillButton(Button):
         
     def set_disabled(self, disabled: bool):
         super().set_disabled(disabled)
-        self.labelsurf = BuildContext().get_font(_scale(18), "bold").render(self.labelstr, True, c_disabledtext if disabled else c_accenttext)
+        self.labelsurf = BuildContext().get_font(_scale(16), "bold").render(self.labelstr, True, c_disabledtext if disabled else c_accenttext)
 
     def render(self, window: pygame.SurfaceType):
         self._drawshape(window, c_disabled if self.disabled else c_accent, self.layoutobject.rendered)
