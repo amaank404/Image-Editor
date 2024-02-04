@@ -209,7 +209,7 @@ def runapp():
                                             disabled=True
                                         ),
                                         Spacer("16,0"),
-                                        blurslider := Slider(disabled=True, on_change=lambda self: filtersliderchange(self, "blur",  imview, statusbar, notifier, attr="size", filterobj=ImageFilter.MinFilter)),
+                                        blurslider := Slider(disabled=True, on_change=lambda self: filtersliderchange(self, "blur",  imview, statusbar, notifier, attr="radius", filterobj=ImageFilter.GaussianBlur)),
                                         Spacer("8,0"),
                                     ],
                                     size = f",{blurbutton.layoutobject.y}",
