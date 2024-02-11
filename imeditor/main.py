@@ -5,7 +5,9 @@ import pygame
 import os
 from PIL import Image, ImageFilter
 
-from tkinter.filedialog import askopenfilename, asksaveasfilename
+from tkinter.filedialog import askopenfilename as _askopenfilename
+from tkinter.filedialog import asksaveasfilename as _asksaveasfilename
+import tkinter as tk
 
 from .gui.widgets import _scale
 
@@ -25,6 +27,19 @@ filetypesopen = (
 
 BuildContext().setdefault("allowimagechanges", True)
 BuildContext().setdefault("filternotification", False)
+
+def tkinterwrapper(func):
+    def _tkinterwrapper(*args, **kwargs):
+        root = tk.Tk()
+        root.overrideredirect(True)
+        root.attributes("-alpha", 0)
+        returndata = func(*args, **kwargs)
+        root.destroy()
+        return returndata
+    return _tkinterwrapper
+
+askopenfilename = tkinterwrapper(_askopenfilename)
+asksaveasfilename = tkinterwrapper(_asksaveasfilename)
 
 def saveimage(imview: PILImageView, notifier: Notifier):
     imagefile = BuildContext()["imagefilepath"]
@@ -78,7 +93,7 @@ def openimage(imview: PILImageView, statusbar: StatusBar, notifier: Notifier, co
         x.set_disabled(False)
     containerstack.recalculate_layout(forced=True)
 
-def blurimage(imview: PILImageView, slider: Slider, statusbar: StatusBar, notifier: Notifier):
+def blurimage(imview: PILImageView, slider: Slider, statusbar: StatusBar, notifier: Notifier, canceltbutton: IconButton):
     if not BuildContext()["allowimagechanges"] and BuildContext()["curop"] != "blur":
         notifier.notify("Can not perform this operation while another operation is in progress")
         return
@@ -93,6 +108,8 @@ def blurimage(imview: PILImageView, slider: Slider, statusbar: StatusBar, notifi
     statusbar.unset("preview")
     
     imview.image = imview.image.filter(ImageFilter.GaussianBlur(radius=val))
+
+    canceltbutton.set_disabled(True)
     notifier.notify("Applied Blur")
 
 def cancelop(cancelbutton: IconButton, cropview: CropView, imview: PILImageView, statusbar: StatusBar, blurslider: Slider):
@@ -187,7 +204,7 @@ def runapp():
                     menu_items=[
                         MenuItem("Open Image", lambda: openimage(imview, statusbar, notifier, containerstack, cropbutton, blurbutton, blurslider)),
                         MenuItem("Save", lambda: saveimage(imview, notifier)),
-                        MenuItem("Save As", lambda: saveasimage(imview, notifier, statusbar, blurslider))
+                        MenuItem("Save As", lambda: saveasimage(imview, notifier, statusbar))
                     ]
                 ),
                 Row(
@@ -235,7 +252,7 @@ def runapp():
                                         Spacer("8,0"),
                                         blurbutton := PillButton(
                                             label="Blur",
-                                            action=lambda: blurimage(imview, blurslider, statusbar, notifier),
+                                            action=lambda: blurimage(imview, blurslider, statusbar, notifier, cancelbutton),
                                             disabled=True
                                         ),
                                         Spacer("16,0"),

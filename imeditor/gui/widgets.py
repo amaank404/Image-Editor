@@ -3,7 +3,7 @@ import pygame.gfxdraw
 from PIL import Image
 import os
 from functools import lru_cache
-from typing import TypeAlias, Tuple, Union, List, Callable, Dict
+from typing import Tuple, Union, List, Callable, Dict
 import math
 import enum
 
@@ -11,7 +11,7 @@ from . import layouthandler as lh
 from .colors import *
 
 # Defining the position type
-Position: TypeAlias = Union[Tuple[int, int], pygame.Rect]
+Position = Union[Tuple[int, int], pygame.Rect]
 
 def _sizeargs(size: str) -> dict:
     args = {}
