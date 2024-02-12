@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "wypeditor"
+version = "0.1.0"
+description = "An Image Editor based on wyper"
+authors = ["Amaan <71920621+amaank404@users.noreply.github.com>"]
+license = "MIT License"
+readme = "README.md"
+packages = [{include = "wypeditor"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pygame = "^2"
+wyper = {path="../wyper"}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+wypeditor = "wypeditor.main:runapp"
