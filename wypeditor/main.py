@@ -7,7 +7,7 @@ from wyper import scale as _scale
 import pygame
 import os
 import darkdetect
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageOps
 
 from tkinter.filedialog import askopenfilename as _askopenfilename
 from tkinter.filedialog import asksaveasfilename as _asksaveasfilename
@@ -225,6 +225,7 @@ def runapp():
             sname = fname
         if not BuildContext()["allowimagechanges"] and BuildContext()["curop"] != fname:
             notifier.notify(f"Can't preview '{sname}' while another operation is in progress")
+            return 
 
         statusbar.set_status("preview", "Previewing "+sname)
         
@@ -239,6 +240,7 @@ def runapp():
             cancelbutton.set_disabled(True)
             del imview.original_image
             statusbar.unset("preview")
+            notifier.notify(f"Applied {sname}")
             BuildContext()["allowimagechanges"] = True
             BuildContext()["curop"] = None
 
@@ -301,6 +303,8 @@ def runapp():
                             crossalign=LayoutCrossAxisAlignment.CENTER,
                             children=[
                                 Spacer(f"0,{_scale(8)}"),
+                                Label("Operations", 20, colors.c_disabledtext, "bold"),
+                                Spacer(f"0,{_scale(4)}"),
                                 HPadding(
                                     _scale(8),
                                     child = (cropbutton := PillButton(
@@ -309,6 +313,22 @@ def runapp():
                                         disabled=True,
                                         hsize="1f",
                                     ))
+                                ),
+                                Spacer(f"0,{_scale(8)}"),
+                                Row(
+                                    crossalign = LayoutCrossAxisAlignment.CENTER,
+                                    children = [
+                                        Spacer(f"{_scale(8)},0"),
+                                        resizebutton := PillButton(
+                                            label="Resize",
+                                            action=lambda: resizeimage(),
+                                            disabled=True
+                                        ),
+                                        Spacer(f"{_scale(8)},0"),
+                                        resizeslider := Slider(disabled=True, on_change=lambda self: resizesliderchange(self)),
+                                        Spacer(f"{_scale(8)},0"),
+                                    ],
+                                    size = f",{resizebutton.layoutobject.y}",
                                 ),
                                 Spacer(f"0,{_scale(8)}"),
                                 HSep(8),
@@ -335,15 +355,24 @@ def runapp():
                                 *filterbutton(filterlambda(ImageFilter.SMOOTH), "smooth", "Smooth"),
                                 *filterbutton(filterlambda(ImageFilter.SHARPEN), "sharpen", "Sharpen"),
                                 *filterbutton(filterlambda(ImageFilter.EMBOSS), "emboss", "Emboss"),
-                                *filterbutton(filterlambda(ImageFilter.EDGE_ENHANCE), "edgeenhance", "Edge Enhance"),
-                                *filterbutton(filterlambda(ImageFilter.DETAIL), "detail", "Detail"),
                             ]
                         ),
                         VSep(),
                         Column(
                             size = "20%,",
                             crossalign=LayoutCrossAxisAlignment.CENTER,
-                            children=[]
+                            children=[
+                                *filterbutton(filterlambda(ImageFilter.EDGE_ENHANCE), "edgeenhance", "Edge Enhance"),
+                                *filterbutton(filterlambda(ImageFilter.DETAIL), "detail", "Detail"),
+                                Spacer(f"0,{_scale(8)}"),
+                                HSep(8),
+                                *filterbutton(lambda im: ImageOps.invert(im), "invert", "Invert"),
+                                *filterbutton(lambda im: ImageOps.autocontrast(im), "autocontrast", "Auto Contrast"),
+                                *filterbutton(lambda im: ImageOps.equalize(im), "equalize", "Equalize"),
+                                *filterbutton(lambda im: ImageOps.grayscale(im).convert("RGB"), "grayscale", "Grayscale"),
+                                *filterbutton(lambda im: ImageOps.posterize(im, 2), "posterize", "Posterize"),
+                                *filterbutton(lambda im: ImageOps.solarize(im), "solarize", "Solarize"),
+                            ]
                         )
                     ],
                 ),
@@ -352,5 +381,7 @@ def runapp():
             ]
         )
     )
+
+    resizeslider.set_value(100)
 
     main_widget.run(debug=True)
