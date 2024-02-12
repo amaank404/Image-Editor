@@ -171,4 +171,4 @@ url = "../wyper"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "b6a3d9640dcadd6b907883b0a108af6fd41042dc695f5e919190a68bada80bfb"
+content-hash = "57aa893caff5cc7e604b0764faf15fea3dfd6b432e81b2c1ff8de79ceb67bf4e"
