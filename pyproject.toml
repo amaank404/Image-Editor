@@ -10,7 +10,7 @@ packages = [{include = "wypeditor"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 pygame = "^2"
-wyper = ">=0.1.1"
+wyper = ">=0.1.2"
 darkdetect = "^0.8.0"
 
 [tool.poetry.dev-dependencies]

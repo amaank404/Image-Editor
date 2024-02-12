@@ -3,21 +3,23 @@
 The following image editor is made using pygame and a custom GUI
 library under the hood. The GUI library takes some inspiration from
 flutter. The layout calculation part of the GUI library has been separated
-into its own module.
+into its own module. 
+
+**Update: The GUI library has been separated from this project into its own library named wyper**
 
 The Image editor comes with the following features:
 
+* Automatic Dark/Light mode depending on your system settings.
 * Fractional DPI Scaling GUI for crystel clear interface on even high DPI monitors
 * Resizable Layout
 * Interactive Image Cropping Functionality
-* Image Filters such as
-    1. Blur
+
 
 ![](scrshots/mainwindow.png)
 
 ### How it works
 
-The gui component of this program is completely reusable and can be used to create other GUI applications.
+The gui component of this program is completely reusable and can be used to create other GUI applications. Please look at wyper library for reference.
 
 Widgets are easy to create with only a few methods needed to be overriden.
 

@@ -167,7 +167,7 @@ files = [
 
 [[package]]
 name = "wyper"
-version = "0.1.0"
+version = "0.1.2"
 description = "A First Class GUI Library inspired by flutter"
 optional = false
 python-versions = "^3.8"
@@ -185,4 +185,4 @@ url = "../wyper"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "ce6acc42e9b11f4e1fd82f984601707a37c98ad34b52859afb45c6eba269439a"
+content-hash = "b2ea5e751d6f089fcedda4ddba651e9cc3bf846db8553579c78b33c469d58534"
